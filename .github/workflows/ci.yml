@@ -1,0 +1,24 @@
+name: Check template
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: mkdir -p .release/test-tmp
+      - run: pnpm test
+        env:
+          TMPDIR: ${{ github.workspace }}/.release/test-tmp
+      - run: pnpm build

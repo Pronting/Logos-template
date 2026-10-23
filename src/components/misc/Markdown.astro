@@ -1,0 +1,386 @@
+---
+import { siteConfig } from '@/config'
+import '@fontsource-variable/jetbrains-mono'
+import '@fontsource-variable/jetbrains-mono/wght-italic.css'
+import '@styles/markdown.css'
+
+interface Props {
+  class?: string
+}
+const className = Astro.props.class
+---
+<div data-pagefind-body class=`markdown-content ${className}`>
+    <slot/>
+</div>
+
+<script>
+  function setupSpoilers() {
+    const spoilers = document.querySelectorAll('.spoiler');
+    
+    spoilers.forEach(el => {
+      let timeoutId = null;
+      let clickTime = 0;
+
+      el.addEventListener('click', () => {
+        el.classList.add('revealed');
+        clickTime = Date.now();
+
+        if (timeoutId) clearTimeout(timeoutId);
+
+        const isMobile = window.innerWidth < 776;
+
+        if (!isMobile) {
+          // --- 桌面端逻辑：保持原样，3秒后自动模糊 ---
+          timeoutId = setTimeout(() => {
+            el.classList.remove('revealed');
+          }, 3000);
+        } else {
+          // --- 移动端逻辑 (< 776px) ---
+          // 只有满足两个条件：1. 发生滚动 2. 距离点击已过3秒
+          const handleScroll = () => {
+            const timeElapsed = Date.now() - clickTime;
+            
+            if (timeElapsed >= 3000) {
+              el.classList.remove('revealed');
+              window.removeEventListener('scroll', handleScroll);
+            }
+          };
+
+          window.addEventListener('scroll', handleScroll, { passive: true });
+        }
+      });
+    });
+  }
+
+  setupSpoilers();
+  document.addEventListener('astro:page-load', setupSpoilers);
+</script>
+
+<style is:global>
+  .code-block-wrapper {
+    position: relative !important;
+    width: 100%;
+  }
+
+  pre {
+    margin-top: 0 !important;
+    overflow-x: auto;
+  }
+  .copy-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 20;
+    padding: 6px;
+    background: rgba(40, 44, 52, 0.8); 
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    cursor: pointer;
+    color: #ccc;
+    
+    opacity: 0;
+    transition: all 0.2s ease-in-out;
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .code-block-wrapper:hover .copy-btn {
+    opacity: 1;
+  }
+
+  @media (hover: none) {
+    .copy-btn {
+      opacity: 1;
+    }
+  }
+
+  .copy-btn .icon-check {
+    display: none; 
+  }
+
+  .copy-btn.copied .icon-copy {
+    display: none; 
+  }
+
+  .copy-btn.copied .icon-check {
+    display: block; 
+    color: #4caf50;
+  }
+
+  .copy-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+  }
+
+</style>
+
+<style is:global>
+  .markdown-content section[data-footnotes] .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  .markdown-content section[data-footnotes] a[data-footnote-backref]::before {
+    content: none !important;
+    display: none !important;
+    border: none !important;
+  }
+
+  .markdown-content section[data-footnotes] {
+    margin-top: 3rem;       
+    padding-top: 1.5rem;    
+    border-top: 1px dashed var(--button-border-color); 
+    color: var(--text-color-70);         
+    font-size: 0.875rem;    
+  }
+
+  .markdown-content section[data-footnotes] ol {
+    list-style: none; 
+    counter-reset: footnote-counter;
+    padding-left: 0;        
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0; 
+  }
+
+  .markdown-content section[data-footnotes] li {
+    counter-increment: footnote-counter; 
+    line-height: 1.6;
+    display: flex !important;
+    align-items: flex-start; 
+    position: relative !important; 
+  }
+
+  .markdown-content section[data-footnotes] li::before {
+    content: "[" counter(footnote-counter) "]" !important; 
+    display: inline-block !important;
+    font-weight: 600;      
+    color: var(--link-color); 
+    width: 2rem;
+    flex-shrink: 0;  
+    text-align: left; 
+    margin: 0 !important; 
+    transform: none !important; 
+  }
+
+  .markdown-content section[data-footnotes] li p {
+    display: inline !important; 
+    margin: 0 !important;
+    position: static !important; 
+  }
+
+  .markdown-content section[data-footnotes] a[data-footnote-backref] {
+    display: inline-block !important;
+    position: static !important; 
+    color: var(--link-color) !important;
+    text-decoration: none !important;
+    margin-left: 0;
+    transition: transform 0.2s ease;
+  }
+
+  .markdown-content section[data-footnotes] a[data-footnote-backref]:hover {
+    color: var(--link-color) !important;
+    transform: translateX(-2px);
+  }
+
+  @keyframes highlight-fade {
+    0% {
+      background-color: var(--link-color); 
+    }
+    100% {
+      background-color: transparent;
+    }
+  }
+
+  .markdown-content section[data-footnotes] li:target {
+    animation: highlight-fade 2s ease-out;
+    border-radius: 4px;
+  }
+  .markdown-content sup a[data-footnote-ref]::before,
+  .markdown-content sup a[data-footnote-ref]::after {
+    content: none; 
+    display: inline;
+    position: static;
+    border: none;
+    transform: none;
+  }
+
+  .markdown-content sup a[data-footnote-ref] {
+    display: inline !important; 
+    position: static !important; 
+    color: var(--link-color) !important; 
+    font-size: 0.75rem; 
+    font-weight: 600; 
+    padding: 0 1px; 
+    text-decoration: none !important;
+    transition: color 0.2s ease;
+  }
+
+  .markdown-content sup a[data-footnote-ref]::before {
+    content: "[" !important;
+    display: inline !important;
+    color: var(--link-color) !important; 
+    margin-right: 1px;
+  }
+
+  .markdown-content sup a[data-footnote-ref]::after {
+    content: "]" !important;
+    display: inline !important;
+    color: var(--link-color) !important;
+    margin-left: 1px;
+  }
+
+  .markdown-content sup a[data-footnote-ref]:hover {
+    filter: brightness(0.8) !important; 
+  }
+
+  .markdown-content p:has(sup a[data-footnote-ref]:target), 
+  .markdown-content sup a[data-footnote-ref]:target {
+    animation: highlight-fade 2s ease-out;
+    border-radius: 4px;
+  }
+</style>
+
+<script>
+  const copyIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+  const checkIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4caf50" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+
+  function createCopyButtons() {
+    const blocks = document.querySelectorAll("pre");
+
+    blocks.forEach((block) => {
+      if (block.parentElement.classList.contains("code-block-wrapper")) return;
+
+      const wrapper = document.createElement("div");
+      wrapper.className = "code-block-wrapper";
+
+      block.parentNode.insertBefore(wrapper, block);
+      wrapper.appendChild(block);
+
+      const button = document.createElement("button");
+      button.className = "copy-btn";
+      button.innerHTML = `<span class="icon-copy">${copyIcon}</span><span class="icon-check">${checkIcon}</span>`;
+      
+      wrapper.appendChild(button);
+
+      button.addEventListener("click", async () => {
+        const code = block.querySelector("code");
+        const text = code ? code.innerText : block.innerText;
+        await navigator.clipboard.writeText(text);
+
+        button.classList.add("copied");
+        setTimeout(() => button.classList.remove("copied"), 2000);
+      });
+    });
+  }
+
+
+  createCopyButtons();
+  document.addEventListener("astro:page-load", createCopyButtons);
+</script>
+
+{ siteConfig.theme.LQIP &&
+<script>
+  function handleLqipImages() {
+    const lqipImages = document.querySelectorAll('.lqip-markdown-img');
+    lqipImages.forEach(img => {
+      if (img.complete) {
+        img.classList.add('lqip-loaded');
+      } else {
+        img.addEventListener('load', () => {
+          img.classList.add('lqip-loaded');
+        });
+        img.addEventListener('error', () => {
+          img.classList.add('lqip-loaded');
+        });
+      }
+    });
+  }
+          
+  document.addEventListener('astro:page-load', handleLqipImages);
+</script>
+}
+
+{ siteConfig.theme.PhotoSwipe &&
+<script>
+    import 'photoswipe/style.css'
+    import PhotoSwipeLightbox from 'photoswipe/lightbox';
+
+    function createPhotoSwipeLightbox() {
+      const container = document.querySelector('.markdown-content');
+      if (container) {
+        // 查找文章区域内所有的 figure 元素
+        // console.log('Initializing PhotoSwipe Lightbox for images in .markdown-content');
+        const figures = container.querySelectorAll('figure');
+
+        figures.forEach((figure) => {
+          const img = figure.querySelector('img');
+          if (!img) return;
+
+          // 创建 a 标签
+          const a = document.createElement('a');
+          a.href = img.src;
+          a.className = 'pswp-link';
+          
+          // 优先使用已有属性
+          const width = img.getAttribute('width');
+          const height = img.getAttribute('height');
+          
+          if (width && height) {
+            a.setAttribute('data-pswp-width', width);
+            a.setAttribute('data-pswp-height', height);
+          } else {
+            // 外部图片：尝试从自然尺寸获取
+            // 如果图片已加载，直接使用 naturalWidth/naturalHeight
+            if (img.complete && img.naturalWidth) {
+              a.setAttribute('data-pswp-width', img.naturalWidth.toString());
+              a.setAttribute('data-pswp-height', img.naturalHeight.toString());
+            } else {
+              // 图片未加载完成，监听 load 事件
+              img.addEventListener('load', () => {
+                if (img.naturalWidth) {
+                  a.setAttribute('data-pswp-width', img.naturalWidth.toString());
+                  a.setAttribute('data-pswp-height', img.naturalHeight.toString());
+                }
+              }, { once: true });
+              
+              // 设置一个合理的默认值，避免铺满屏幕
+              // 大多数博客图片宽度在 800-1200 之间
+              a.setAttribute('data-pswp-width', '1000');
+              a.setAttribute('data-pswp-height', '750');
+            }
+          }
+          
+          figure.insertBefore(a, img);
+          a.appendChild(img);
+        });
+
+        // 初始化 Lightbox
+        const lightbox = new PhotoSwipeLightbox({
+          // 指定文章内所有包含图片的链接
+          gallery: '.markdown-content',
+          children: 'a.pswp-link',
+          pswpModule: () => import('photoswipe')
+        });
+        lightbox.init();
+        console.log('PhotoSwipe Lightbox initialized');
+      }else {
+        console.log('No .markdown-content found, skipping PhotoSwipe Lightbox initialization.');
+      }
+    }
+
+    document.addEventListener('astro:page-load', createPhotoSwipeLightbox);
+    // document.addEventListener('astro:after-swap', createPhotoSwipeLightbox);
+    
+</script>
+}

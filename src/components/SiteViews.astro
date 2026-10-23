@@ -1,0 +1,61 @@
+---
+import { i18n } from "astro:config/client";
+import i18nit from "@i18n/translation";
+import { viewsEnabled } from "@utils/views";
+
+const lang = Astro.currentLocale || i18n!.defaultLocale;
+const isChinese = lang.toLowerCase().startsWith("zh");
+const t = i18nit(lang);
+const enabled = viewsEnabled();
+const label = t("siteStats.totalVisits");
+---
+
+{enabled && (
+  <span class="site-views" data-site-views>
+    <span class="site-views-label">{label}</span>
+    <span class="site-views-value">
+      <span id="busuanzi_value_site_pv">–</span>
+      {isChinese ? " 次" : ""}
+    </span>
+  </span>
+)}
+
+<script>
+import { initViews } from "@utils/views";
+
+document.addEventListener("astro:page-load", initViews);
+document.addEventListener("astro:after-swap", initViews);
+document.addEventListener("DOMContentLoaded", initViews);
+</script>
+
+<style>
+  .site-views {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.45rem;
+    color: rgba(255, 255, 255, 0.68);
+    white-space: nowrap;
+  }
+
+  .site-views-label {
+    color: rgba(255, 255, 255, 0.62);
+    font-family: "EB Garamond", "Noto Serif SC", serif !important;
+    font-size: 0.92rem;
+    line-height: 1.6;
+  }
+
+  .site-views-value {
+    color: rgba(255, 255, 255, 0.86);
+    font-family: "JetBrains Mono Variable", "Consolas", monospace;
+    font-size: 0.84rem;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0;
+  }
+
+  @media (max-width: 768px) {
+    .site-views {
+      flex-wrap: wrap;
+      white-space: normal;
+    }
+  }
+</style>

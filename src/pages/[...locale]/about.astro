@@ -1,0 +1,98 @@
+---
+import MainPageLayout from '@layouts/MainPageLayout.astro'
+import Markdown from '@components/misc/Markdown.astro'
+import Cover from '@components/Cover.astro'
+import FabMenu from '@components/control/FabMenu.astro'
+import ContributionHeatmap from '@components/ContributionHeatmap.svelte'
+
+import { getSpec, getContributionData } from '@utils/content-utils'
+
+import { siteConfig, profileConfig } from '@/config'
+import i18nit from '@i18n/translation'
+import { render } from 'astro:content'
+import { i18n } from "astro:config/client";
+
+export async function getStaticPaths() {
+	return i18n?.locales.map(locale => ({ params: { locale: locale == i18n?.defaultLocale ? undefined : (locale as string) } }));
+}
+
+
+const currentLang = Astro.currentLocale || i18n!.defaultLocale;
+const t = i18nit(currentLang);
+
+const aboutPost = await getSpec(currentLang, 'about');
+if (!aboutPost) {
+    throw new Error('No about post found');
+}
+const { Content } = await render(aboutPost);
+const contributions = await getContributionData(currentLang);
+
+const pageTitle = t("header.about") + " - " + siteConfig.title;
+
+// 头像资源解析（注意本文件在 src/pages/[...locale]/，glob 需上溯两级到 src/assets/；
+// 查询键用后缀匹配，兼容 glob 键的字面量深度）
+const srcAssetMap = import.meta.glob<string>(
+    '../../assets/*.{jpg,jpeg,png,webp,gif,svg,ico}',
+    { eager: true, query: '?url', import: 'default' }
+);
+const isAbsoluteOrData = (s: string) =>
+    /^([a-z]+:)?\/\//i.test(s) || s.startsWith("data:");
+const resolveAsset = (path: string): string => {
+    if (isAbsoluteOrData(path) || path.startsWith("/")) return path;
+    const key = Object.keys(srcAssetMap).find(k => k.endsWith(path));
+    return key ? srcAssetMap[key] : `/${path}`;
+};
+const avatarSrc = resolveAsset(profileConfig.avatar);
+---
+<MainPageLayout title={pageTitle} lang={currentLang}>
+    <div class="mx-auto w-full max-w-[var(--page-width)]">
+        <Cover title={t("cover.title.about")} subTitle={t("cover.subTitle.about")}/>
+        <div class="about-body relative mx-auto w-full max-w-[var(--page-width)]" data-aos="fade-up">
+            <!-- 头像：md 以上绝对定位左上（与简介导语同高），移动端置顶居中 -->
+            <div class="avatar-wrap flex justify-center">
+                <div class="relative w-32 h-32 md:w-36 md:h-36 rounded-full overflow-hidden ring-2 ring-[var(--button-border-color)] transition-all duration-300">
+                    <img
+                        src={avatarSrc}
+                        alt={profileConfig.name}
+                        class="w-full h-full object-cover"
+                        loading="lazy"
+                        onerror="this.onerror=null;this.src='https://www.gravatar.com/avatar/?d=mp';"
+                    />
+                </div>
+            </div>
+            <!-- 正文：简介导语占头像右侧，关于这个站点通栏铺满 -->
+            <div class="about-content">
+                <Markdown class="mb-6 markdown-content onload-animation">
+                    <Content />
+                </Markdown>
+            </div>
+        </div>
+        <ContributionHeatmap dates={contributions} lang={currentLang} client:load />
+    </div>
+    <FabMenu showBackBottom={true} />
+</MainPageLayout>
+
+<style>
+    /* 关于页编辑风排版：简介导语放大并在 md+ 让出头像位，关于站点通栏 */
+    .about-body :global(.markdown-content > p:first-child) {
+        font-size: 1.15rem;
+        line-height: 2;
+        color: var(--text-color);
+    }
+    @media (min-width: 768px) {
+        .avatar-wrap {
+            position: absolute;
+            top: 0.25rem;
+            left: 0;
+        }
+        /* 正文整体让出 220px 给左侧头像 */
+        .about-body :global(.markdown-content) {
+            padding-left: 220px;
+        }
+        /* 「关于这个站点」标题与紧随段落拉回通栏 */
+        .about-body :global(.markdown-content h2),
+        .about-body :global(.markdown-content h2 + p) {
+            margin-left: -220px;
+        }
+    }
+</style>

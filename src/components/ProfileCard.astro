@@ -1,0 +1,214 @@
+---
+import "@styles/global.css"
+import { Icon } from "astro-icon/components"
+import { profileConfig } from "@/config"
+import { i18n } from "astro:config/client";
+import i18nit from "@i18n/translation"
+
+const currentLang = Astro.currentLocale || i18n!.defaultLocale;
+const t = i18nit(currentLang);
+
+const { avatar, name, description, motto, links = [] } = profileConfig;
+
+// Resolve asset URLs via import.meta.glob
+const srcAssetMap = import.meta.glob<string>(
+    '../assets/*.{jpg,jpeg,png,webp,gif,svg,ico}',
+    { eager: true, query: '?url', import: 'default' }
+);
+
+const isAbsoluteOrData = (s: string) =>
+    /^([a-z]+:)?\/\//i.test(s) || s.startsWith("data:");
+
+function resolveAsset(path: string): string {
+    if (isAbsoluteOrData(path) || path.startsWith("/")) return path;
+    return srcAssetMap[`../${path}`] ?? `/${path}`;
+}
+
+const avatarSrc = resolveAsset(avatar);
+
+// Pre-resolve QR code images from assets
+const resolvedLinks = links.map(link => ({
+    ...link,
+    resolvedQr: link.qrCode ? resolveAsset(link.qrCode) : null,
+}));
+---
+
+<aside
+    data-aos="fade-left"
+    data-aos-delay="100"
+    class="profile-card group block w-full max-w-[280px] mx-auto my-6 p-6 rounded-xl shadow border border-[var(--button-border-color)] bg-[var(--surface-color)] text-[var(--text-color)] transition-all duration-300 hover:shadow-lg hover:border-[var(--link-color)]"
+    aria-label={t("profileCard.title")}
+>
+    <!-- Avatar -->
+    <div class="flex justify-center mb-4">
+        <div class="avatar-wrap relative w-24 h-24 rounded-full overflow-hidden ring-2 ring-[var(--button-border-color)] transition-all duration-300 group-hover:ring-[var(--link-color)]">
+            <img
+                src={avatarSrc}
+                alt={name}
+                class="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-110"
+                loading="lazy"
+                onerror="this.onerror=null;this.src='https://www.gravatar.com/avatar/?d=mp';"
+            />
+        </div>
+    </div>
+
+    <!-- Name & motto -->
+    <div class="text-center mb-4">
+        <h2 class="text-lg font-bold tracking-wide">{name}</h2>
+        {motto && (
+            <p class="mt-1 text-sm italic text-[var(--text-color-70)]">
+                "{motto}"
+            </p>
+        )}
+        {description && (
+            <p class="mt-1 text-xs text-[var(--text-color-70)] opacity-80">
+                {description}
+            </p>
+        )}
+    </div>
+
+    <!-- Divider -->
+    <div class="border-t border-[var(--button-border-color)] my-3"></div>
+
+    <!-- Contact icons — horizontal row, no text -->
+    {resolvedLinks.length > 0 && (
+        <div class="flex items-center justify-center gap-3">
+            {resolvedLinks.map((link) => (
+                <div class="relative group/link">
+                    {link.copyable ? (
+                        <button
+                            type="button"
+                            class="profile-link flex items-center justify-center w-9 h-9 rounded-full text-[var(--text-color)] hover:bg-[var(--button-hover-color)] hover:text-[var(--link-color)] active:scale-90 transition-all duration-200"
+                            data-copy-value={link.url}
+                            data-copy-success={t("profileCard.copySuccess")}
+                            data-copy-failed={t("profileCard.copyFailed")}
+                            aria-label={`${t("profileCard.copy")} ${link.name}`}
+                        >
+                            <Icon name={link.icon} class="w-5 h-5" />
+                        </button>
+                    ) : link.resolvedQr ? (
+                        <!-- QR-only: hover 显示二维码，不跳转 -->
+                        <div
+                            class="profile-link flex items-center justify-center w-9 h-9 rounded-full text-[var(--text-color)] hover:bg-[var(--button-hover-color)] hover:text-[var(--link-color)] transition-all duration-200 cursor-default"
+                            aria-label={link.name}
+                        >
+                            <Icon name={link.icon} class="w-5 h-5" />
+                        </div>
+                    ) : (
+                        <a
+                            href={link.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="profile-link flex items-center justify-center w-9 h-9 rounded-full text-[var(--text-color)] hover:bg-[var(--button-hover-color)] hover:text-[var(--link-color)] active:scale-90 transition-all duration-200"
+                            aria-label={link.name}
+                        >
+                            <Icon name={link.icon} class="w-5 h-5" />
+                        </a>
+                    )}
+                    {link.resolvedQr && (
+                        <div class="qr-popup absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden z-50" data-qr-trigger>
+                            <div class="absolute left-0 right-0 -bottom-2 h-2"></div>
+                            <div class="bg-white rounded-lg shadow-xl border border-gray-200 p-2">
+                                <img src={link.resolvedQr} alt={`${link.name} QR`} class="w-32 h-32 object-contain" />
+                            </div>
+                            <div class="w-2.5 h-2.5 bg-white border-r border-b border-gray-200 absolute left-1/2 -translate-x-1/2 -bottom-1.5 rotate-45"></div>
+                        </div>
+                    )}
+                </div>
+            ))}
+        </div>
+    )}
+
+    <!-- Copy success tooltip -->
+    <div id="copy-toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[999] px-3 py-1.5 rounded-lg bg-emerald-500 text-white text-sm font-medium shadow-lg opacity-0 pointer-events-none transition-opacity duration-300"></div>
+</aside>
+
+<style>
+    .profile-card :global(.profile-link:hover) :global(svg) {
+        transform: scale(1.15);
+    }
+    .profile-card :global(.profile-link svg) {
+        transition: transform 0.2s ease;
+    }
+    /* QR popup: explicit width so absolutely-positioned container
+       doesn't shrink-to-fit around the <img> (which itself has
+       max-width: 100% — chicken-and-egg collapses it to ~0px). */
+    .profile-card :global(.qr-popup) {
+        width: max-content;
+    }
+</style>
+
+<script>
+    function initQrPopups() {
+        const triggers = document.querySelectorAll<HTMLElement>('[data-qr-trigger]');
+        triggers.forEach((popup) => {
+            const wrapper = popup.parentElement;
+            if (!wrapper) return;
+            if (wrapper.dataset.qrBound === 'true') return;
+            wrapper.dataset.qrBound = 'true';
+            const show = () => popup.classList.remove('hidden');
+            const hide = () => popup.classList.add('hidden');
+            wrapper.addEventListener('mouseenter', show);
+            wrapper.addEventListener('mouseleave', hide);
+            // Touch support: tap to toggle
+            wrapper.addEventListener('click', (e) => {
+                e.preventDefault();
+                popup.classList.toggle('hidden');
+            });
+            // Hide when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!wrapper.contains(e.target as Node)) hide();
+            });
+        });
+    }
+
+    function initCopyButtons() {
+        const buttons = document.querySelectorAll<HTMLButtonElement>('.profile-link[data-copy-value]');
+        if (buttons.length === 0) return;
+
+        buttons.forEach((btn) => {
+            if (btn.dataset.bound === 'true') return;
+            btn.dataset.bound = 'true';
+
+            btn.addEventListener('click', async () => {
+                const value = btn.dataset.copyValue ?? '';
+                const successMsg = btn.dataset.copySuccess ?? 'Copied';
+                const failedMsg = btn.dataset.copyFailed ?? 'Copy failed';
+
+                try {
+                    if (navigator.clipboard && window.isSecureContext) {
+                        await navigator.clipboard.writeText(value);
+                    } else {
+                        const ta = document.createElement('textarea');
+                        ta.value = value;
+                        ta.style.position = 'fixed';
+                        ta.style.opacity = '0';
+                        document.body.appendChild(ta);
+                        ta.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(ta);
+                    }
+                    showToast(successMsg);
+                } catch (err) {
+                    console.error('Copy failed:', err);
+                    showToast(failedMsg);
+                }
+            });
+        });
+    }
+
+    function showToast(msg: string) {
+        const toast = document.getElementById('copy-toast');
+        if (!toast) return;
+        toast.textContent = msg;
+        toast.style.opacity = '1';
+        setTimeout(() => {
+            toast.style.opacity = '0';
+        }, 1500);
+    }
+
+    document.addEventListener('astro:page-load', () => {
+        initCopyButtons();
+        initQrPopups();
+    });
+</script>

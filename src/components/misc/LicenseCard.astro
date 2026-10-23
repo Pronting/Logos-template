@@ -1,0 +1,198 @@
+---
+import type { LicenseConfig } from '@/types/config';
+import { licenseConfig, profileConfig } from '@/config';
+
+import { Icon } from "astro-icon/components"
+import { i18n } from "astro:config/client";
+import i18nit from "@i18n/translation";
+import { formatFullDate } from '@/utils/time'
+
+interface Props {
+    title: string;
+    pubDate: string;
+    author?: string;
+    url?: string;
+    class?: string;
+    license?: LicenseConfig;
+}
+
+
+const { title, pubDate, author, url, license } = Astro.props;
+const className = Astro.props.class;
+
+const currentLang = Astro.currentLocale || i18n!.defaultLocale;
+const t = i18nit(currentLang);
+const isChinese = currentLang.toLowerCase().startsWith("zh");
+
+const postUrl = url ?? decodeURIComponent(Astro.url.toString());
+const postLicense = license ?? licenseConfig;
+const postAuthor = author ?? profileConfig.name;
+---
+
+<section data-aos="fade-up" class={`post-footer-card ${className ?? ""}`} aria-label={isChinese ? "文章信息" : "Article information"}>
+    <div class="post-footer-header">
+        <div class="post-footer-kicker">{isChinese ? "本文信息" : "Article Info"}</div>
+        <h2>{title}</h2>
+        <a href={postUrl} class="post-footer-url">{postUrl}</a>
+    </div>
+
+    <dl class="post-footer-meta">
+        <div class="post-footer-meta-item">
+            <dt>
+                <Icon name="fa6-solid:user-pen" class="post-footer-icon" />
+                {t("license.author")}
+            </dt>
+            <dd>{postAuthor}</dd>
+        </div>
+        <div class="post-footer-meta-item">
+            <dt>
+                <Icon name="fa6-solid:calendar-day" class="post-footer-icon" />
+                {t("license.publishon")}
+            </dt>
+            <dd>{formatFullDate(pubDate, currentLang)}</dd>
+        </div>
+        <div class="post-footer-meta-item">
+            <dt>
+                <Icon name="fa6-brands:creative-commons" class="post-footer-icon" />
+                {t("license.license")}
+            </dt>
+            <dd>
+                <a href={postLicense.url} target="_blank" rel="noopener noreferrer">{postLicense.name}</a>
+            </dd>
+        </div>
+    </dl>
+</section>
+
+<style>
+    .post-footer-card {
+        position: relative;
+        margin-top: 3rem;
+        padding: 1.1rem 1.25rem;
+        border: 1px solid var(--button-border-color);
+        border-left: 3px solid var(--link-color);
+        border-radius: 6px;
+        background:
+            linear-gradient(180deg, var(--surface-color), var(--bg-color));
+        color: var(--text-color);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+    }
+
+    .post-footer-header {
+        min-width: 0;
+        padding-bottom: 0.9rem;
+        border-bottom: 1px solid var(--button-border-color);
+    }
+
+    .post-footer-kicker {
+        margin-bottom: 0.35rem;
+        color: var(--text-color-70);
+        font-family: "JetBrains Mono Variable", "Consolas", monospace;
+        font-size: 0.72rem;
+        letter-spacing: 0;
+        text-transform: uppercase;
+    }
+
+    .post-footer-header h2 {
+        margin: 0;
+        color: var(--text-color);
+        font-size: 1.05rem;
+        font-weight: 700;
+        line-height: 1.45;
+    }
+
+    .post-footer-url {
+        display: block;
+        width: fit-content;
+        max-width: 100%;
+        margin-top: 0.45rem;
+        overflow-wrap: anywhere;
+        color: var(--text-color-70);
+        font-family: "JetBrains Mono Variable", "Consolas", monospace;
+        font-size: 0.78rem;
+        line-height: 1.5;
+        text-decoration: none;
+        transition: color 0.2s ease;
+    }
+
+    .post-footer-url:hover {
+        color: var(--link-color);
+    }
+
+    .post-footer-meta {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0;
+        margin: 0;
+    }
+
+    .post-footer-meta-item {
+        min-width: 0;
+        padding: 1rem 1rem 0 0;
+    }
+
+    .post-footer-meta-item + .post-footer-meta-item {
+        padding-left: 1rem;
+        border-left: 1px solid var(--button-border-color);
+    }
+
+    .post-footer-meta dt {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin: 0 0 0.35rem;
+        color: var(--text-color-70);
+        font-size: 0.78rem;
+        line-height: 1.4;
+    }
+
+    .post-footer-meta dd {
+        margin: 0;
+        color: var(--text-color);
+        font-size: 0.92rem;
+        font-weight: 700;
+        line-height: 1.45;
+        overflow-wrap: anywhere;
+    }
+
+    .post-footer-meta a {
+        color: inherit;
+        text-decoration: none;
+        transition: color 0.2s ease;
+    }
+
+    .post-footer-meta a:hover {
+        color: var(--link-color);
+    }
+
+    .post-footer-icon {
+        width: 0.9rem;
+        height: 0.9rem;
+        color: var(--link-color);
+        flex: 0 0 auto;
+    }
+
+    :global([data-theme="dark"]) .post-footer-card {
+        box-shadow: 0 14px 34px rgba(0, 0, 0, 0.18);
+    }
+
+    @media (max-width: 720px) {
+        .post-footer-card {
+            margin-top: 2.25rem;
+            padding: 1rem;
+        }
+
+        .post-footer-meta {
+            grid-template-columns: 1fr;
+        }
+
+        .post-footer-meta-item {
+            padding: 0.85rem 0 0;
+        }
+
+        .post-footer-meta-item + .post-footer-meta-item {
+            padding-left: 0;
+            border-left: 0;
+            border-top: 1px solid var(--button-border-color);
+        }
+    }
+</style>

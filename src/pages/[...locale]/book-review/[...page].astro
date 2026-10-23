@@ -1,0 +1,39 @@
+---
+import { i18n } from "astro:config/client";
+import type { GetStaticPaths } from 'astro';
+import { getRelativeLocaleUrl } from '@utils/url-utils';
+
+// 书评列表已迁移为「书架」的子标签，这里把旧链接（含分页）重定向过去。
+// 书评详情页仍由同目录下的 [...id].astro 负责，不受影响。
+export const getStaticPaths = (async ({ paginate }) => {
+    const paths = [];
+    for (const locale of i18n.locales) {
+        const localeCode = typeof locale === 'string' ? locale : locale.path;
+        const localeParam = localeCode === i18n.defaultLocale ? undefined : localeCode;
+        paths.push(...paginate([{}], {
+            pageSize: 1,
+            params: { locale: localeParam }
+        }));
+    }
+    return paths;
+}) satisfies GetStaticPaths
+
+const currentLang = Astro.currentLocale || i18n!.defaultLocale;
+const target = `${getRelativeLocaleUrl(currentLang, "/bookshelf/")}?tab=review`;
+---
+
+<!doctype html>
+<html lang={currentLang}>
+    <head>
+        <meta charset="utf-8" />
+        <title>Redirecting…</title>
+        <link rel="canonical" href={target} />
+        <meta name="robots" content="noindex" />
+        <!-- ClientRouter 会读取 meta refresh 完成跳转，同时作为无脚本环境的兜底 -->
+        <meta http-equiv="refresh" content={`0;url=${target}`} />
+        <script is:inline define:vars={{ target }}>
+            window.location.replace(target);
+        </script>
+    </head>
+    <body></body>
+</html>

@@ -1,0 +1,135 @@
+---
+import '@styles/global.css'
+import { siteConfig } from '@/config'
+import MainPageLayout from '@layouts/MainPageLayout.astro'
+import Markdown from '@components/misc/Markdown.astro'
+import ImageModule from '@components/misc/ImageModule.astro'
+import FabMenu from '@components/control/FabMenu.astro'
+import TOC from '@components/TOC.svelte'
+import Comments from '@components/comment/Comments.svelte'
+import AISummary from '@components/AISummary.astro'
+import ViewCounter from '@components/ViewCounter.astro'
+
+import { getCollection, render } from 'astro:content'
+import { i18n } from "astro:config/client";
+import i18nit from '@i18n/translation'
+import { Icon } from "astro-icon/components";
+import { getRelativeLocaleUrl, contentCoverUrl } from '@/utils/url-utils'
+import { formatFullDate } from '@/utils/time'
+import { getBookReviews, buildBookInfoMap } from '@utils/book-utils'
+import { createAiSummaryKey, getAiSummary, stripLocaleFromId } from '@utils/ai-summary'
+
+const currentLang = Astro.currentLocale || i18n!.defaultLocale;
+const t = i18nit(currentLang);
+
+export async function getStaticPaths() {
+    const locales = i18n?.locales || [i18n?.defaultLocale];
+    const paths = [];
+
+    for (const locale of locales) {
+        const localeCode = typeof locale === 'string' ? locale : locale.path;
+        const localeParam = localeCode === i18n.defaultLocale ? undefined : localeCode;
+        const reviews = await getBookReviews(localeParam);
+        const bookInfoMap = await buildBookInfoMap(localeParam);
+
+        for (const entry of reviews) {
+            paths.push({
+                params: {
+                    locale: localeParam,
+                    id: entry.id
+                },
+                props: { entry, bookInfoMap }
+            });
+        }
+    }
+
+    return paths;
+}
+
+const { entry, bookInfoMap } = Astro.props;
+const { Content, headings } = await render(entry);
+const { remarkPluginFrontmatter } = await render(entry);
+const pageTitle = entry.data.title + ' - ' + siteConfig.title;
+const image = contentCoverUrl((entry.data.cover || entry.data.image) ?? '', entry.id, 'book-review');
+
+const relatedBook = entry.data.bookSlug ? bookInfoMap.get(entry.data.bookSlug) : null;
+const bookshelfUrl = entry.data.bookSlug
+    ? getRelativeLocaleUrl(currentLang, `/bookshelf/?book=${encodeURIComponent(entry.data.bookSlug)}`)
+    : "";
+const summaryId = stripLocaleFromId(entry.id, i18n!.locales as string[]);
+const summaryLocale = entry.id.endsWith(`/${currentLang}`) ? currentLang : i18n!.defaultLocale;
+const aiSummary = getAiSummary(createAiSummaryKey("bookReview", summaryLocale, summaryId));
+---
+
+<MainPageLayout title={pageTitle} lang={currentLang} description={entry.data.description}>
+    <div class="mx-auto w-full max-w-[var(--page-width)] py-8 md:mt-0 mt-18">
+        <div class="mb-18 text-center">
+            <h1 data-pagefind-body class="font-bold text-3xl mb-2 pt-10 text-[var(--text-color)]">{ entry.data.title }</h1>
+            <p class="flex flex-wrap items-center justify-center font-bold text-[var(--text-color-70)] mt-6">
+                <Icon name="fa6-solid:calendar-days" class="mr-2"></Icon>
+                <span>{ formatFullDate(entry.data.pubDate, currentLang) }</span>
+            </p>
+            <div class="flex flex-wrap items-center justify-center text-sm text-[var(--text-color-70)] mt-2 gap-2">
+                <p class="flex items-center whitespace-nowrap mr-2">
+                    <Icon name="fa6-solid:pen-nib" class="mr-1"></Icon>
+                    <span class="py-1 px-1">{remarkPluginFrontmatter.words || 0} {t("pagecard.words")}</span>
+                </p>
+                <p class="flex items-center whitespace-nowrap mr-2">
+                    <Icon name="fa6-solid:clock" class="mr-1"></Icon>
+                    <span class="py-1 px-1">{remarkPluginFrontmatter.minutes || 0} {t("pagecard.minutes")}</span>
+                </p>
+                {entry.data.tags && entry.data.tags.length > 0 && (
+                    <p class="flex items-center whitespace-nowrap mr-2">
+                        <Icon name="fa6-solid:hashtag" class="mr-1"></Icon>
+                        {entry.data.tags.map((tag: string, i: number) => (
+                            <>
+                                {i > 0 && <span class="mx-0.5">·</span>}
+                                <a href={getRelativeLocaleUrl(currentLang, `/archives/?tag=${encodeURIComponent(tag)}`)} class="hover:text-[var(--link-color)] transition-colors">{tag}</a>
+                            </>
+                        ))}
+                    </p>
+                )}
+                <ViewCounter lang={currentLang} />
+            </div>
+            <AISummary summary={aiSummary?.summary} lang={summaryLocale} />
+            {relatedBook && (
+                <div class="flex justify-center mt-4">
+                    <a
+                        href={bookshelfUrl}
+                        class="inline-flex items-center gap-3 px-4 py-2.5 rounded-xl border border-[var(--button-border-color)] bg-[var(--button-hover-color)] hover:border-[var(--link-color)] hover:bg-[var(--link-color)]/10 transition-all duration-200 group"
+                    >
+                        {relatedBook.cover ? (
+                            <img src={relatedBook.cover} alt={relatedBook.title} class="w-8 h-11 object-cover rounded border border-[var(--button-border-color)]" />
+                        ) : (
+                            <Icon name="fa6-solid:book" class="w-5 h-5 text-[var(--text-color-70)]" />
+                        )}
+                        <div class="text-left">
+                            <p class="text-xs text-[var(--text-color-70)]">{t("bookReview.relatedBook")}</p>
+                            <p class="text-sm font-semibold text-[var(--text-color)] group-hover:text-[var(--link-color)] transition-colors">
+                                {relatedBook.title}
+                                <span class="text-xs font-normal text-[var(--text-color-70)] ml-1.5">{relatedBook.author}</span>
+                            </p>
+                        </div>
+                        <Icon name="fa6-solid:arrow-right" class="w-3.5 h-3.5 text-[var(--text-color-70)] opacity-0 group-hover:opacity-100 transition-opacity ml-1" />
+                    </a>
+                </div>
+            )}
+        </div>
+        {image && entry.data.showCover !== false && (
+            <div class="cover overflow-hidden mb-6 mt-10">
+                <ImageModule src={image} class="w-full h-full object-cover"/>
+            </div>
+        )}
+        <Markdown class="mb-6 mt-10 markdown-content onload-animation">
+            <Content />
+        </Markdown>
+        {siteConfig.comments.enable && siteConfig.comments.platform === "default" && (
+            <Comments postSlug={entry.data.bookSlug} language={currentLang} postTitle={entry.data.title} client:visible/>
+        )}
+    </div>
+    {
+        siteConfig.toc.enable &&
+        <TOC headings={headings} language={currentLang} client:load/>
+    }
+    <FabMenu headings={headings} showComment={siteConfig.comments.enable} showBackBottom={!siteConfig.comments.enable}/>
+</MainPageLayout>

@@ -1,0 +1,249 @@
+---
+import { Icon } from "astro-icon/components";
+
+interface Props {
+  summary?: string | null;
+  lang?: string;
+}
+
+const { summary, lang = "zh-cn" } = Astro.props;
+const text = summary?.trim() ?? "";
+const isChinese = lang.toLowerCase().startsWith("zh");
+---
+
+{text && (
+  <section class="ai-summary" data-ai-summary-card data-summary={text} aria-label={isChinese ? "AI 摘要" : "AI summary"}>
+    <div class="ai-summary-header">
+      <div class="ai-summary-title">
+        <Icon name="fa6-solid:wand-magic-sparkles" class="ai-summary-icon" />
+        <span>{isChinese ? "AI 摘要" : "AI Summary"}</span>
+      </div>
+      <button type="button" class="ai-summary-toggle" data-summary-toggle aria-expanded="true">
+        <span data-expanded-label>{isChinese ? "收起" : "Collapse"}</span>
+        <span data-collapsed-label hidden>{isChinese ? "展开" : "Expand"}</span>
+        <Icon name="fa6-solid:chevron-up" class="ai-summary-chevron" />
+      </button>
+    </div>
+    <div class="ai-summary-body" data-summary-body>
+      <p class="ai-summary-text" data-summary-text>{text}</p>
+    </div>
+  </section>
+)}
+
+<script is:inline>
+  (() => {
+    function initAiSummaries() {
+      const cards = document.querySelectorAll("[data-ai-summary-card]");
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      cards.forEach((card) => {
+        if (card.dataset.initialized === "true") return;
+        card.dataset.initialized = "true";
+
+        const body = card.querySelector("[data-summary-body]");
+        const textEl = card.querySelector("[data-summary-text]");
+        const toggle = card.querySelector("[data-summary-toggle]");
+        const expandedLabel = card.querySelector("[data-expanded-label]");
+        const collapsedLabel = card.querySelector("[data-collapsed-label]");
+        const chevron = card.querySelector(".ai-summary-chevron");
+        const fullText = card.getAttribute("data-summary") || textEl?.textContent || "";
+
+        function setExpanded(expanded) {
+          card.classList.toggle("is-collapsed", !expanded);
+          toggle?.setAttribute("aria-expanded", expanded ? "true" : "false");
+          if (expandedLabel) expandedLabel.hidden = !expanded;
+          if (collapsedLabel) collapsedLabel.hidden = expanded;
+          if (chevron) chevron.classList.toggle("is-open", expanded);
+        }
+
+        toggle?.addEventListener("click", () => {
+          const expanded = toggle.getAttribute("aria-expanded") !== "false";
+          setExpanded(!expanded);
+        });
+
+        if (!textEl || reduceMotion || fullText.length === 0) {
+          if (textEl) textEl.textContent = fullText;
+          setExpanded(true);
+          return;
+        }
+
+        card.classList.add("is-typing");
+        textEl.textContent = "";
+        let i = 0;
+        const step = () => {
+          if (!document.documentElement.contains(card)) return;
+          textEl.textContent = fullText.slice(0, i);
+          i += 1;
+          if (i <= fullText.length) {
+            window.setTimeout(step, 18);
+          } else {
+            textEl.textContent = fullText;
+            card.classList.remove("is-typing");
+          }
+        };
+        window.setTimeout(step, 160);
+      });
+    }
+
+    document.addEventListener("astro:page-load", initAiSummaries);
+    initAiSummaries();
+  })();
+</script>
+
+<style>
+  .ai-summary {
+    width: min(100%, 760px);
+    margin: 1.35rem auto 0;
+    border: 1px solid color-mix(in srgb, var(--button-border-color) 86%, var(--text-color) 14%);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--surface-color) 92%, var(--bg-color) 8%);
+    color: var(--text-color);
+    box-shadow: 0 1px 0 color-mix(in srgb, var(--bg-color) 70%, transparent);
+    overflow: hidden;
+    text-align: left;
+  }
+
+  .ai-summary-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.7rem 0.95rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--button-border-color) 76%, transparent);
+    background: color-mix(in srgb, var(--button-hover-color) 34%, transparent);
+  }
+
+  .ai-summary-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+    color: var(--text-color);
+    font-size: 0.88rem;
+    font-weight: 700;
+    letter-spacing: 0;
+  }
+
+  .ai-summary-icon {
+    width: 0.95rem;
+    height: 0.95rem;
+    color: color-mix(in srgb, var(--link-color) 78%, var(--text-color) 22%);
+  }
+
+  .ai-summary-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-color-70);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.82rem;
+    line-height: 1;
+    padding: 0.35rem 0.45rem;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  }
+
+  .ai-summary-toggle:hover {
+    background: var(--button-hover-color);
+    border-color: var(--button-border-color);
+    color: var(--link-color);
+  }
+
+  .ai-summary-chevron {
+    width: 0.75rem;
+    height: 0.75rem;
+    transform: rotate(180deg);
+    transition: transform 0.2s ease;
+  }
+
+  .ai-summary-chevron.is-open {
+    transform: rotate(0deg);
+  }
+
+  .ai-summary-body {
+    max-height: 13.5rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    padding: 1rem 1.05rem 1.05rem;
+    transition: max-height 0.25s ease, padding 0.25s ease;
+  }
+
+  .ai-summary-body::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .ai-summary-body::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .ai-summary-body::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--text-color-70) 38%, transparent);
+    background-clip: padding-box;
+  }
+
+  .ai-summary.is-collapsed .ai-summary-body {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    overflow: hidden;
+  }
+
+  .ai-summary-text {
+    margin: 0;
+    color: color-mix(in srgb, var(--text-color) 84%, var(--text-color-70) 16%);
+    font-size: 0.96rem;
+    line-height: 1.92;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .ai-summary.is-typing .ai-summary-text::after {
+    content: "";
+    display: inline-block;
+    width: 1px;
+    height: 1em;
+    margin-left: 0.18rem;
+    background: var(--link-color);
+    vertical-align: -0.12em;
+    animation: ai-summary-cursor 0.9s steps(2, start) infinite;
+  }
+
+  @keyframes ai-summary-cursor {
+    50% {
+      opacity: 0;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .ai-summary {
+      margin-top: 1.1rem;
+    }
+
+    .ai-summary-header {
+      padding: 0.75rem 0.8rem;
+    }
+
+    .ai-summary-body {
+      max-height: 12.5rem;
+      padding: 0.85rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ai-summary-body,
+    .ai-summary-chevron,
+    .ai-summary-toggle {
+      transition: none;
+    }
+
+    .ai-summary.is-typing .ai-summary-text::after {
+      animation: none;
+    }
+  }
+</style>

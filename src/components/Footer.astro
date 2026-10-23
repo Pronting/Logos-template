@@ -1,0 +1,399 @@
+---
+import { Icon } from "astro-icon/components";
+import { profileConfig, siteConfig } from "../config";
+import { i18n } from "astro:config/client";
+import SiteViews from "./SiteViews.astro";
+
+let introPage : string;
+
+if (profileConfig.indexPage) {
+    introPage = profileConfig.indexPage;
+} else {
+    introPage = import.meta.env.BASE_URL;
+}
+
+const currentLang = Astro.currentLocale || i18n!.defaultLocale;
+const isChinese = currentLang.toLowerCase().startsWith("zh");
+const startTime = new Date(profileConfig.startYear, 0, 1, 0, 0, 0).getTime();
+
+function formatRuntime(diffMs: number) {
+    const totalSeconds = Math.max(0, Math.floor(diffMs / 1000));
+    const seconds = totalSeconds % 60;
+    const totalMinutes = Math.floor(totalSeconds / 60);
+    const minutes = totalMinutes % 60;
+    const totalHours = Math.floor(totalMinutes / 60);
+    const hours = totalHours % 24;
+    const totalDays = Math.floor(totalHours / 24);
+    const years = Math.floor(totalDays / 365);
+    const days = totalDays % 365;
+
+    if (isChinese) return `${years} 年 ${days} 天 ${hours} 时 ${minutes} 分 ${seconds} 秒`;
+    return `${years}y ${days}d ${hours}h ${minutes}m ${seconds}s`;
+}
+
+const initialRuntime = formatRuntime(Date.now() - startTime);
+---
+
+<footer class="site-footer">
+    <div class="site-footer-inner">
+        <section class="site-footer-brand" aria-label="Site">
+            <a class="site-footer-title" target="_self" href={introPage}>{siteConfig.title}</a>
+        </section>
+
+        <section class="site-footer-meta" aria-label="Copyright">
+            <div
+                class="site-runtime"
+                data-site-runtime
+                data-start-time={startTime}
+                data-lang={currentLang}
+            >
+                <span>{isChinese ? "已运行" : "Running for"}</span>
+                <time data-runtime-value>{initialRuntime}</time>
+            </div>
+            <SiteViews />
+            <div>© {profileConfig.startYear} - {new Date().getFullYear()} {profileConfig.name}</div>
+        </section>
+
+        <section class="site-footer-links" aria-label="Powered by">
+            <div class="site-footer-powered">
+                <span>Powered by</span>
+                <div class="site-footer-icons">
+                    <a target="_blank" href="https://astro.build" title="Astro" class="tooltip-wrapper"><Icon name="simple-icons:astro" /></a>
+                    <a target="_blank" href="https://svelte.dev/" title="Svelte" class="tooltip-wrapper"><Icon name="simple-icons:svelte" /></a>
+                    <a target="_blank" href="https://tailwindcss.com/" title="Tailwind CSS" class="tooltip-wrapper"><Icon name="simple-icons:tailwindcss" /></a>
+                    <a target="_blank" href="https://github.com/Pronting/Logos-template" title="GitHub" class="tooltip-wrapper"><Icon name="simple-icons:github" /></a>
+                </div>
+            </div>
+            <a href="/rss.xml" target="_self" class="rss-subscribe" aria-label="RSS Subscribe">
+                <Icon name="simple-icons:rss" />
+                <span>RSS</span>
+            </a>
+        </section>
+    </div>
+</footer>
+
+<script is:inline data-astro-rerun>
+    (() => {
+        function formatRuntime(diffMs, isChinese) {
+            const totalSeconds = Math.max(0, Math.floor(diffMs / 1000));
+            const seconds = totalSeconds % 60;
+            const totalMinutes = Math.floor(totalSeconds / 60);
+            const minutes = totalMinutes % 60;
+            const totalHours = Math.floor(totalMinutes / 60);
+            const hours = totalHours % 24;
+            const totalDays = Math.floor(totalHours / 24);
+            const years = Math.floor(totalDays / 365);
+            const days = totalDays % 365;
+
+            return isChinese
+                ? `${years} 年 ${days} 天 ${hours} 时 ${minutes} 分 ${seconds} 秒`
+                : `${years}y ${days}d ${hours}h ${minutes}m ${seconds}s`;
+        }
+
+        window.__logosRuntimeTimers = window.__logosRuntimeTimers || [];
+
+        window.__logosInitRuntime = () => {
+            window.__logosRuntimeTimers.forEach((timer) => window.clearInterval(timer));
+            window.__logosRuntimeTimers = [];
+
+            document.querySelectorAll("[data-site-runtime]").forEach((root) => {
+                const timeEl = root.querySelector("[data-runtime-value]");
+                const startTime = Number(root.getAttribute("data-start-time"));
+                const lang = root.getAttribute("data-lang") || "zh-cn";
+                const isChinese = lang.toLowerCase().startsWith("zh");
+
+                if (!timeEl || !Number.isFinite(startTime)) return;
+
+                const updateRuntime = () => {
+                    timeEl.textContent = formatRuntime(Date.now() - startTime, isChinese);
+                };
+
+                updateRuntime();
+                window.__logosRuntimeTimers.push(window.setInterval(updateRuntime, 1000));
+            });
+        };
+
+        if (!window.__logosRuntimeBound) {
+            document.addEventListener("astro:page-load", () => window.__logosInitRuntime?.());
+            window.__logosRuntimeBound = true;
+        }
+
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", () => window.__logosInitRuntime?.(), { once: true });
+        } else {
+            window.__logosInitRuntime();
+        }
+    })();
+</script>
+
+<style>
+    .site-footer {
+        margin-top: 4rem;
+        min-height: 220px;
+        padding: 3.5rem max(1rem, 5vw) 3rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
+        background:
+            linear-gradient(180deg, #151b25 0%, #0f141c 100%);
+        color: rgba(255, 255, 255, 0.72);
+        font-family: "EB Garamond", "Noto Serif SC", serif !important;
+    }
+
+    .site-footer-inner {
+        display: grid;
+        grid-template-columns: minmax(0, 1.1fr) minmax(13rem, 0.9fr) minmax(18rem, 1fr);
+        gap: 2rem;
+        align-items: center;
+        width: min(1024px, 90vw);
+        margin: 0 auto;
+    }
+
+    .site-footer-brand,
+    .site-footer-meta,
+    .site-footer-links {
+        min-width: 0;
+    }
+
+    .site-footer-brand {
+        display: flex;
+        align-items: center;
+        min-height: 4rem;
+    }
+
+    .site-footer-title {
+        display: inline-block;
+        color: #ffffff;
+        font-size: 1.8rem;
+        font-weight: 700;
+        line-height: 1.1;
+        text-decoration: none;
+        transition: color 0.2s ease, opacity 0.2s ease;
+    }
+
+    .site-footer-title:hover {
+        color: #8ec5ff;
+    }
+
+    .site-footer-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 0.55rem;
+        color: rgba(255, 255, 255, 0.62);
+        font-size: 0.92rem;
+        line-height: 1.6;
+    }
+
+    .site-runtime {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 0.45rem;
+        color: rgba(255, 255, 255, 0.68);
+        white-space: nowrap;
+    }
+
+    .site-runtime time {
+        color: rgba(255, 255, 255, 0.86);
+        font-family: "JetBrains Mono Variable", "Consolas", monospace;
+        font-size: 0.84rem;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 0;
+    }
+
+    .beian-link {
+        width: fit-content;
+        color: rgba(255, 255, 255, 0.62);
+        font-size: 0.9rem;
+        text-decoration: none;
+        transition: color 0.2s ease;
+    }
+
+    .beian-link:hover {
+        color: #8ec5ff;
+    }
+
+    .site-footer-links {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.75rem;
+        color: rgba(255, 255, 255, 0.58);
+        font-size: 0.9rem;
+        line-height: 1.4;
+        text-align: right;
+    }
+
+    .site-footer-powered {
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        white-space: nowrap;
+        width: max-content;
+    }
+
+    .site-footer-icons {
+        display: flex;
+        flex-wrap: nowrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.55rem;
+    }
+
+    .site-footer-icons a {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.25rem;
+        height: 2.25rem;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.045);
+        color: rgba(255, 255, 255, 0.72);
+        text-decoration: none;
+        transition:
+            background-color 0.2s ease,
+            border-color 0.2s ease,
+            color 0.2s ease,
+            transform 0.2s ease;
+    }
+
+    .site-footer-icons a:hover {
+        border-color: rgba(142, 197, 255, 0.55);
+        background: rgba(142, 197, 255, 0.12);
+        color: #ffffff;
+        transform: translateY(-1px);
+    }
+
+    .site-footer-icons :global(svg) {
+        width: 1rem;
+        height: 1rem;
+    }
+
+    .rss-subscribe {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        min-height: 2.25rem;
+        padding: 0 0.85rem;
+        border: 1px solid rgba(255, 157, 66, 0.42);
+        border-radius: 999px;
+        background: rgba(255, 157, 66, 0.12);
+        color: #ffd0a0;
+        font-size: 0.86rem;
+        font-weight: 700;
+        text-decoration: none;
+        transition:
+            background-color 0.2s ease,
+            border-color 0.2s ease,
+            color 0.2s ease,
+            transform 0.2s ease;
+    }
+
+    .rss-subscribe:hover {
+        border-color: rgba(255, 177, 92, 0.75);
+        background: rgba(255, 157, 66, 0.2);
+        color: #ffffff;
+        transform: translateY(-1px);
+    }
+
+    .rss-subscribe :global(svg) {
+        width: 0.95rem;
+        height: 0.95rem;
+    }
+
+    .tooltip-wrapper {
+        text-decoration: none !important;
+    }
+
+    .tooltip-wrapper:hover {
+        outline: none !important;
+        border-style: solid;
+    }
+
+    .tooltip-wrapper:hover::after {
+        content: attr(title);
+        position: absolute;
+        bottom: calc(100% + 0.45rem);
+        left: 50%;
+        z-index: 1000;
+        transform: translateX(-50%);
+        padding: 4px 8px;
+        border-radius: 6px;
+        background-color: #f8fafc;
+        color: #10151d;
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1.2;
+        white-space: nowrap;
+        opacity: 0;
+        animation: fadeInTooltip 0.18s forwards;
+        text-align: center;
+    }
+
+    :global([data-theme="dark"]) .site-footer {
+        border-top-color: rgba(255, 255, 255, 0.08);
+        background:
+            linear-gradient(180deg, #080d13 0%, #05080d 100%);
+        color: rgba(255, 255, 255, 0.7);
+    }
+
+    :global([data-theme="dark"]) .site-footer-title:hover,
+    :global([data-theme="dark"]) .beian-link:hover {
+        color: #58a6ff;
+    }
+
+    :global([data-theme="dark"]) .site-footer-icons a:hover {
+        border-color: rgba(88, 166, 255, 0.55);
+        background: rgba(88, 166, 255, 0.13);
+    }
+
+    :global([data-theme="dark"]) .rss-subscribe {
+        border-color: rgba(255, 157, 66, 0.36);
+        background: rgba(255, 157, 66, 0.1);
+        color: #ffc987;
+    }
+
+    :global([data-theme="dark"]) .rss-subscribe:hover {
+        border-color: rgba(255, 177, 92, 0.72);
+        background: rgba(255, 157, 66, 0.18);
+        color: #ffffff;
+    }
+
+    @keyframes fadeInTooltip {
+        to {
+            opacity: 1;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .site-footer {
+            margin-top: 3rem;
+            min-height: 260px;
+            padding: 3rem max(1rem, 5vw);
+        }
+
+        .site-footer-inner {
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        .site-runtime {
+            flex-wrap: wrap;
+            white-space: normal;
+        }
+
+        .site-footer-links {
+            align-items: flex-start;
+            text-align: left;
+        }
+
+        .site-footer-powered {
+            justify-content: flex-start;
+        }
+
+        .site-footer-icons {
+            justify-content: flex-start;
+        }
+    }
+</style>

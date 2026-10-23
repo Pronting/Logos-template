@@ -1,0 +1,90 @@
+---
+import "@styles/global.css"
+import type { CollectionEntry } from 'astro:content';
+import { formatFullDate } from '@/utils/time'
+import { i18n } from "astro:config/client";
+import i18nit from '@i18n/translation'
+import { Icon } from "astro-icon/components";
+
+interface Props {
+    entry: CollectionEntry<'articles'>;
+}
+
+const { entry } = Astro.props;
+const currentLang = Astro.currentLocale || i18n!.defaultLocale;
+const t = i18nit(currentLang);
+
+const { title, description, link, pubDate, tags, image, pinTop } = entry.data;
+---
+
+<div data-aos="fade-up" class="block min-w-0 w-full max-w-[var(--page-width)] mx-auto my-6 rounded-xl shadow border border-[var(--button-border-color)] overflow-hidden">
+    {image && (
+        <a href={link} target="_blank" rel="noopener noreferrer" class="cover h-60 overflow-hidden hover-scale block">
+            <img src={image} alt={title} class="w-full h-full object-cover" loading="lazy" />
+        </a>
+    )}
+    <div class="content p-6">
+        <a href={link} target="_blank" rel="noopener noreferrer" class="title text-xl font-semibold text-[var(--text-color)] mb-3 hover:text-[var(--link-color)] active:text-[var(--link-color)] flex items-center group transition-colors duration-300 ease-in-out">
+            <span class="flex items-center">
+                {pinTop > 0 && <Icon name="fluent:pin-24-filled" class="mr-1" />}
+                {title}
+            </span>
+            <Icon
+                name="fa6-solid:arrow-up-right-from-square"
+                class="ml-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transform md:translate-x-[-5px] md:group-hover:translate-x-0 transition-all duration-300 ease-in-out text-[var(--text-color)] group-hover:text-[var(--link-color)] group-active:text-[var(--link-color)]"
+            />
+        </a>
+        {description && (
+            <p class="description text-[var(--text-color-70)] leading-relaxed mt-2">
+                {description}
+            </p>
+        )}
+        <div class="flex items-center justify-start text-sm text-[var(--text-color-70)] mt-4 space-x-4">
+            <p class="pubdate flex items-center whitespace-nowrap">
+                <Icon name="fa6-solid:calendar-days" class="mr-1" />
+                <span class="py-1 px-1">{formatFullDate(pubDate, currentLang)}</span>
+            </p>
+            <a href={link} target="_blank" rel="noopener noreferrer" class="link-url flex items-center whitespace-nowrap hover:text-[var(--link-color)] transition-colors">
+                <Icon name="fa6-solid:link" class="mr-1" />
+                <span class="py-1 px-1 truncate max-w-[200px]">{new URL(link).hostname}</span>
+            </a>
+        </div>
+        {tags && tags.length > 0 && (
+            <div class="flex flex-wrap items-center justify-start text-sm text-[var(--text-color-70)] mt-2 gap-2">
+                <p class="flex items-center whitespace-nowrap mr-2">
+                    <Icon name="fa6-solid:hashtag" class="mr-1" />
+                    {tags.map((tag: string, i: number) => (
+                        <>
+                            {i > 0 && <span class="mx-0.5">·</span>}
+                            <span class="tag-pill">{tag}</span>
+                        </>
+                    ))}
+                </p>
+            </div>
+        )}
+    </div>
+</div>
+
+<style is:global>
+.hover-scale {
+  transition: transform 0.3s ease;
+}
+
+.hover-scale:hover {
+  transform: scale(1.05);
+}
+
+.tag-pill {
+  transition: all 0.3s ease;
+  background-color: transparent;
+  display: inline-block;
+  border-radius: 0.25rem;
+  padding: 0.25rem 0.25rem;
+}
+
+.tag-pill:hover {
+  color: var(--link-color);
+  background-color: var(--button-hover-color);
+  text-shadow: 0.5px 0 0 currentColor, -0.5px 0 0 currentColor;
+}
+</style>

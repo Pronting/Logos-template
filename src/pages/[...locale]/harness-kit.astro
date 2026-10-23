@@ -1,0 +1,52 @@
+---
+import MainPageLayout from '@layouts/MainPageLayout.astro';
+import Cover from '@components/Cover.astro';
+import FabMenu from '@components/control/FabMenu.astro';
+import HarnessKit from '@components/harness/HarnessKit.svelte';
+
+import { getHarnessItems } from '@utils/harness-utils';
+import { siteConfig } from '@/config';
+import { i18n } from "astro:config/client";
+
+import i18nit from '@i18n/translation'
+
+export async function getStaticPaths() {
+    return i18n?.locales.map(locale => ({
+        params: { locale: locale == i18n?.defaultLocale ? undefined : (locale as string) }
+    }));
+}
+
+const currentLang = Astro.currentLocale || i18n!.defaultLocale;
+const t = i18nit(currentLang);
+
+const items = await getHarnessItems(currentLang);
+
+const labels = {
+    searchPlaceholder: t("harness.searchPlaceholder"),
+    filterType: t("harness.filterType"),
+    typeAll: t("harness.typeAll"),
+    empty: t("harness.empty"),
+    emptyHint: t("harness.emptyHint"),
+    noResults: t("harness.noResults"),
+    docs: t("harness.docs"),
+    types: {
+        skill: t("harness.types.skill"),
+        command: t("harness.types.command"),
+        agent: t("harness.types.agent"),
+        mcp: t("harness.types.mcp"),
+        prompt: t("harness.types.prompt"),
+        workflow: t("harness.types.workflow"),
+        other: t("harness.types.other"),
+    },
+};
+
+const pageTitle = `${t("header.harnessKit")} - ${siteConfig.title}`;
+---
+
+<MainPageLayout title={pageTitle} lang={currentLang}>
+    <Cover title={t("cover.title.harnessKit")} subTitle={t("cover.subTitle.harnessKit")} />
+    <div class="max-w-[var(--page-width)] mx-auto px-4 pb-16">
+        <HarnessKit items={items} {labels} client:load />
+    </div>
+    <FabMenu showBackBottom={true} />
+</MainPageLayout>

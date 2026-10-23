@@ -1,0 +1,554 @@
+---
+import "@styles/global.css";
+import { heroConfig } from "@/config/hero";
+import { getRelativeLocaleUrl } from "@utils/url-utils";
+import { getSiteTotals } from "@utils/content-utils";
+import { i18n } from "astro:config/client";
+import i18nit from "@i18n/translation";
+
+const locale = Astro.currentLocale ?? i18n!.defaultLocale;
+const t = i18nit(locale);
+const {
+  greeting,
+  name,
+  motto,
+  tags,
+  primaryCta,
+  secondaryCta,
+  particles,
+} = heroConfig;
+
+const primaryHref = getRelativeLocaleUrl(locale, primaryCta.href);
+const secondaryHref = getRelativeLocaleUrl(locale, secondaryCta.href);
+
+// Hero 第一屏的全站统计：构建时聚合，无需手维护
+const { articleCount, totalWords } = await getSiteTotals(locale);
+
+// 将每个汉字拆成独立 span，便于 stagger 入场
+function splitChars(s: string) {
+  return Array.from(s);
+}
+const greetingChars = splitChars(greeting);
+const nameChars = splitChars(name);
+
+// Hero 第一行的统计句子：把数字当作主角，文字作为最小语法骨架。
+// 模板里用 {count} 和 {words} 两个占位符替代数字位置。
+// 渲染时再把这两个占位符替换成独立的 <span data-countup> 数字元素。
+// 例："累计 {count} 篇文章 {words} 个字"
+const statsTemplate = t("siteStats.heroSentence", { count: "__C__", words: "__W__" });
+// 拆成三段：[前缀+count段, 中间, 尾段]
+const splitIdx = statsTemplate.indexOf("__C__");
+const tailIdx = statsTemplate.indexOf("__W__");
+const head = statsTemplate.slice(0, splitIdx);
+const middle = statsTemplate.slice(splitIdx + "__C__".length, tailIdx);
+const tail = statsTemplate.slice(tailIdx + "__W__".length);
+---
+
+<section
+    class="hero-section relative isolate flex min-h-[100dvh] w-full flex-col items-center justify-center overflow-hidden px-6 pt-24 pb-16"
+    aria-label="首页 Hero"
+>
+    <!-- 粒子背景 canvas：绝对定位、pointer-events-none、不阻塞交互 -->
+    <canvas
+        id="hero-particles"
+        class="absolute inset-0 -z-10 h-full w-full pointer-events-none"
+        aria-hidden="true"
+        data-count={particles.count}
+        data-speed={particles.speed}
+        data-color={particles.color}
+    ></canvas>
+
+    <!-- 顶部 eyebrow：标签用 middle-dot 间隔（taste-skill §4.7 EYEBROW RESTRAINT: hero 算 1 个） -->
+    <div
+        class="hero-eyebrow mb-6 text-[var(--text-color-70)] font-mono text-sm uppercase tracking-[0.18em]"
+        data-aos="fade-down"
+        data-aos-duration="600"
+    >
+        {tags.join(" · ")}
+    </div>
+
+    <!-- 大标题：两行 kinetic 字符入场 -->
+    <h1
+        class="hero-title font-extrabold tracking-tight leading-[1.05] text-center max-w-5xl text-[var(--text-color)]"
+        style="font-size: clamp(3rem, 9vw, 7rem);"
+    >
+        <span class="block mb-2 text-[var(--text-color-70)] font-semibold" style="font-size: clamp(1.25rem, 3vw, 2rem); letter-spacing: 0.04em;">
+            {greetingChars.map((ch, i) => (
+                <span class="char-stagger inline-block" style={`--i:${i};`}>{ch === " " ? " " : ch}</span>
+            ))}
+        </span>
+        <span class="block font-black">
+            {nameChars.map((ch, i) => (
+                <span
+                    class="char-stagger inline-block"
+                    style={`--i:${i + greetingChars.length};`}
+                >{ch}</span>
+            ))}
+        </span>
+    </h1>
+
+    <!-- 打字机 motto -->
+    <p
+        class="hero-motto mt-8 mb-2 text-center max-w-2xl"
+        style="font-size: clamp(1rem, 2.5vw, 1.5rem);"
+        data-aos="fade-up"
+        data-aos-delay="200"
+        data-aos-duration="700"
+    >
+        <span
+            id="hero-motto"
+            class="text-[var(--text-color-70)]"
+            data-mottos={JSON.stringify(motto)}
+        ></span>
+        <span
+            id="hero-cursor"
+            class="inline-block w-[2px] h-[1em] bg-[var(--link-color)] align-text-bottom ml-0.5"
+            style="animation: blink 0.6s step-end infinite;"
+        ></span>
+    </p>
+
+    <!-- 全站统计：一句话，数字为主角 -->
+    <p
+        class="hero-stats mt-10 text-center text-[var(--text-color-70)]"
+        style="font-size: clamp(1rem, 1.8vw, 1.2rem);"
+        data-aos="fade-up"
+        data-aos-delay="200"
+        data-aos-duration="700"
+        aria-label="网站统计"
+    >
+        {head}
+        <span
+            class="stat-num font-extrabold text-[var(--text-color)]"
+            style="font-size: clamp(1.75rem, 4vw, 2.75rem); font-variant-numeric: tabular-nums; line-height: 1;"
+            data-countup={String(articleCount)}
+        >0</span>
+        {middle}
+        <span
+            class="stat-num font-extrabold text-[var(--text-color)]"
+            style="font-size: clamp(1.75rem, 4vw, 2.75rem); font-variant-numeric: tabular-nums; line-height: 1;"
+            data-countup={String(totalWords)}
+        >0</span>
+        {tail}
+    </p>
+
+    <!-- CTA 双按钮：primary 实心 + secondary 描边 -->
+    <div
+        class="hero-ctas mt-10 flex flex-wrap justify-center gap-4"
+        data-aos="fade-up"
+        data-aos-delay="1200"
+        data-aos-duration="700"
+    >
+        <a
+            href={primaryHref}
+            class="hero-cta-primary inline-flex items-center gap-2 rounded-full px-7 py-3 text-base font-semibold
+                   bg-[var(--text-color)] text-[var(--bg-color)]
+                   transition-all duration-300
+                   hover:opacity-90 hover:-translate-y-[1px]"
+        >
+            <span>{primaryCta.label}</span>
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16" height="16" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" stroke-width="1.5"
+                stroke-linecap="round" stroke-linejoin="round"
+                aria-hidden="true"
+            >
+                <path d="M5 12h14" />
+                <path d="m13 6 6 6-6 6" />
+            </svg>
+        </a>
+        <a
+            href={secondaryHref}
+            class="hero-cta-secondary inline-flex items-center rounded-full px-7 py-3 text-base font-medium
+                   border border-[var(--button-border-color)] text-[var(--text-color-70)]
+                   transition-all duration-300
+                   hover:border-[var(--link-color)] hover:text-[var(--link-color)] hover:-translate-y-[1px]"
+        >
+            <span>{secondaryCta.label}</span>
+        </a>
+    </div>
+
+    <!-- 滚动指示：底部居中，向下浮动 -->
+    <div
+        class="hero-scroll-cue absolute bottom-8 left-1/2 -translate-x-1/2 text-[var(--text-color-70)]"
+        data-aos="fade-in"
+        data-aos-delay="1600"
+        data-aos-duration="800"
+        aria-label="向下滚动查看更多"
+    >
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="22" height="22" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="1.5"
+            stroke-linecap="round" stroke-linejoin="round"
+            aria-hidden="true"
+            class="scroll-arrow"
+        >
+            <path d="M12 5v14" />
+            <path d="m6 13 6 6 6-6" />
+        </svg>
+    </div>
+</section>
+
+<style>
+    @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0; }
+    }
+
+    /* 字符 stagger 入场 */
+    .char-stagger {
+        opacity: 0;
+        transform: translateY(0.4em);
+        animation: char-rise 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        animation-delay: calc(var(--i, 0) * 60ms + 120ms);
+    }
+
+    @keyframes char-rise {
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* 滚动指示浮动 */
+    .scroll-arrow {
+        animation: float-bob 1.8s ease-in-out infinite;
+    }
+
+    @keyframes float-bob {
+        0%, 100% { transform: translateY(0); opacity: 0.85; }
+        50%      { transform: translateY(6px); opacity: 1; }
+    }
+
+    /* 窄屏进一步压缩 */
+    @media (max-width: 640px) {
+        .hero-section {
+            padding-top: 6rem;
+            padding-bottom: 4rem;
+        }
+    }
+
+    /* prefers-reduced-motion：取消 stagger / 浮动，仅保留静态 */
+    @media (prefers-reduced-motion: reduce) {
+        .char-stagger {
+            opacity: 1;
+            transform: none;
+            animation: none;
+        }
+        .scroll-arrow {
+            animation: none;
+        }
+    }
+</style>
+
+<script>
+    function runTypewriter() {
+        const el = document.getElementById("hero-motto");
+        const cursor = document.getElementById("hero-cursor");
+        if (!el || !cursor) return;
+
+        const mottos: string[] = JSON.parse(el.dataset.mottos || "[]");
+        if (mottos.length === 0) return;
+
+        el.textContent = "";
+        cursor.style.display = "inline-block";
+
+        const TYPE_SPEED = 100;
+        const BACK_SPEED = 50;
+        const PAUSE_AFTER_TYPE = 2000;
+        const PAUSE_AFTER_DELETE = 300;
+
+        let mottoIndex = 0;
+
+        function typeText(text: string, onComplete: () => void) {
+            let i = 0;
+            function typeNext() {
+                if (i < text.length) {
+                    el!.textContent += text[i];
+                    i++;
+                    setTimeout(typeNext, TYPE_SPEED);
+                } else {
+                    setTimeout(onComplete, PAUSE_AFTER_TYPE);
+                }
+            }
+            typeNext();
+        }
+
+        function deleteText(onComplete: () => void) {
+            function deleteNext() {
+                const current = el!.textContent || "";
+                if (current.length > 0) {
+                    el!.textContent = current.slice(0, -1);
+                    setTimeout(deleteNext, BACK_SPEED);
+                } else {
+                    setTimeout(onComplete, PAUSE_AFTER_DELETE);
+                }
+            }
+            deleteNext();
+        }
+
+        function loop() {
+            const text = mottos[mottoIndex];
+            typeText(text, () => {
+                deleteText(() => {
+                    mottoIndex = (mottoIndex + 1) % mottos.length;
+                    loop();
+                });
+            });
+        }
+
+        setTimeout(loop, 200);
+    }
+
+    // 粒子背景：单 Canvas，鼠标交互，prefers-reduced-motion 跳过循环
+    function runParticles() {
+        const canvas = document.getElementById("hero-particles") as HTMLCanvasElement | null;
+        if (!canvas) return;
+
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        const ds = canvas.dataset;
+        const count = Number(ds.count) || 40;
+        const speed = Number(ds.speed) || 1.1;
+
+        const root = document.documentElement;
+        const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+        let width = 0;
+        let height = 0;
+
+        type P = {
+            x: number;
+            y: number;
+            vx: number;
+            vy: number;
+            r: number;
+            baseR: number;
+            phase: number;       // 个体相位，让 twinkle 错开
+            twinkleSpeed: number;
+        };
+        let particles: P[] = [];
+        let rafId = 0;
+        let mouseX = -9999;
+        let mouseY = -9999;
+        let lastMoveTime = 0;
+        let liveColor = "";
+        let t0 = 0;
+
+        function readColor(): string {
+            return getComputedStyle(root).getPropertyValue("--text-color-70").trim() || "#4c4c4c";
+        }
+
+        function resize() {
+            const rect = canvas!.getBoundingClientRect();
+            width = rect.width;
+            height = rect.height;
+            canvas!.width = Math.floor(width * dpr);
+            canvas!.height = Math.floor(height * dpr);
+            ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
+            particles = Array.from({ length: count }, makeParticle);
+        }
+
+        function makeParticle(): P {
+            const baseR = 0.8 + Math.random() * 2.2;
+            return {
+                x: Math.random() * width,
+                y: Math.random() * height,
+                vx: (Math.random() - 0.5) * speed,
+                vy: (Math.random() - 0.5) * speed,
+                r: baseR,
+                baseR,
+                phase: Math.random() * Math.PI * 2,
+                twinkleSpeed: 0.6 + Math.random() * 1.2,
+            };
+        }
+
+        function drawStatic() {
+            ctx!.clearRect(0, 0, width, height);
+            ctx!.fillStyle = liveColor;
+            ctx!.globalAlpha = 0.4;
+            for (const p of particles) {
+                ctx!.beginPath();
+                ctx!.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx!.fill();
+            }
+            ctx!.globalAlpha = 1;
+        }
+
+        function tick(now: number) {
+            if (!t0) t0 = now;
+            const elapsed = (now - t0) / 1000;
+
+            liveColor = readColor();
+            ctx!.clearRect(0, 0, width, height);
+
+            const mouseActive = now - lastMoveTime < 1800;
+
+            // 1) 绘制粒子本体：size 脉动 + opacity twinkle
+            ctx!.fillStyle = liveColor;
+            for (const p of particles) {
+                // 速度：保留 base drift，并对超低速粒子做最小能量补充（避免死粒子）
+                if (Math.abs(p.vx) < 0.05) p.vx += (Math.random() - 0.5) * 0.02;
+                if (Math.abs(p.vy) < 0.05) p.vy += (Math.random() - 0.5) * 0.02;
+
+                // 鼠标交互：吸附 + 半径范围内排斥两种力都给
+                if (mouseActive) {
+                    const dx = mouseX - p.x;
+                    const dy = mouseY - p.y;
+                    const dist = Math.hypot(dx, dy);
+                    if (dist < 220 && dist > 0.01) {
+                        // 近场排斥：50px 内向外推
+                        if (dist < 60) {
+                            p.vx -= (dx / dist) * 0.06;
+                            p.vy -= (dy / dist) * 0.06;
+                        } else {
+                            // 远场吸引：220px 内拉向鼠标
+                            p.vx += (dx / dist) * 0.018;
+                            p.vy += (dy / dist) * 0.018;
+                        }
+                    }
+                }
+
+                // 阻尼减弱（0.998 而非 0.985）以保留动能
+                p.vx *= 0.998;
+                p.vy *= 0.998;
+
+                p.x += p.vx;
+                p.y += p.vy;
+
+                // 边界回弹（不再 teleport，避免瞬移）
+                if (p.x < 0) { p.x = 0; p.vx = Math.abs(p.vx); }
+                if (p.x > width) { p.x = width; p.vx = -Math.abs(p.vx); }
+                if (p.y < 0) { p.y = 0; p.vy = Math.abs(p.vy); }
+                if (p.y > height) { p.y = height; p.vy = -Math.abs(p.vy); }
+
+                // size 脉动 + twinkle（sin 曲线，phase 错开）
+                const breath = 0.5 + 0.5 * Math.sin(elapsed * p.twinkleSpeed + p.phase);
+                p.r = p.baseR * (0.7 + breath * 0.6);
+                const alpha = 0.25 + breath * 0.5;
+
+                ctx!.globalAlpha = alpha;
+                ctx!.beginPath();
+                ctx!.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx!.fill();
+            }
+
+            // 2) 绘制连线（亮起的 twinkle 粒子连线更亮）
+            ctx!.strokeStyle = liveColor;
+            for (let i = 0; i < particles.length; i++) {
+                const a = particles[i];
+                const aBreath = 0.5 + 0.5 * Math.sin(elapsed * a.twinkleSpeed + a.phase);
+                for (let j = i + 1; j < particles.length; j++) {
+                    const b = particles[j];
+                    const dx = a.x - b.x;
+                    const dy = a.y - b.y;
+                    const d2 = dx * dx + dy * dy;
+                    if (d2 < 90 * 90) {
+                        const bBreath = 0.5 + 0.5 * Math.sin(elapsed * b.twinkleSpeed + b.phase);
+                        ctx!.globalAlpha = 0.08 + 0.18 * Math.min(1, aBreath + bBreath);
+                        ctx!.lineWidth = 0.6;
+                        ctx!.beginPath();
+                        ctx!.moveTo(a.x, a.y);
+                        ctx!.lineTo(b.x, b.y);
+                        ctx!.stroke();
+                    }
+                }
+            }
+
+            ctx!.globalAlpha = 1;
+            rafId = requestAnimationFrame(tick);
+        }
+
+        function onPointerMove(e: PointerEvent) {
+            const rect = canvas!.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+            lastMoveTime = performance.now();
+        }
+
+        function onPointerLeave() {
+            mouseX = -9999;
+            mouseY = -9999;
+        }
+
+        liveColor = readColor();
+        resize();
+        window.addEventListener("resize", resize);
+        canvas.addEventListener("pointermove", onPointerMove);
+        canvas.addEventListener("pointerleave", onPointerLeave);
+
+        if (reduceMotion) {
+            drawStatic();
+        } else {
+            rafId = requestAnimationFrame(tick);
+        }
+
+        // 主题切换时，颜色 token 变化；下一帧自动用新值
+        const themeObserver = new MutationObserver(() => {
+            liveColor = readColor();
+            if (reduceMotion) drawStatic();
+        });
+        themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+        const cleanup = () => {
+            cancelAnimationFrame(rafId);
+            window.removeEventListener("resize", resize);
+            canvas.removeEventListener("pointermove", onPointerMove);
+            canvas.removeEventListener("pointerleave", onPointerLeave);
+            themeObserver.disconnect();
+        };
+        document.addEventListener("astro:before-swap", cleanup, { once: true });
+    }
+
+    document.addEventListener("astro:page-load", runTypewriter);
+    document.addEventListener("astro:page-load", runParticles);
+
+    // 数字 count-up：进入视口后从 0 平滑过渡到目标值
+    function runCountUp() {
+        const els = document.querySelectorAll<HTMLElement>("[data-countup]");
+        if (els.length === 0) return;
+
+        const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const DURATION = 1200;
+
+        const animate = (el: HTMLElement) => {
+            const target = Number(el.dataset.countup) || 0;
+            if (reduceMotion) {
+                el.textContent = target.toLocaleString();
+                return;
+            }
+            const start = performance.now();
+            const tick = (now: number) => {
+                const t = Math.min(1, (now - start) / DURATION);
+                const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
+                el.textContent = Math.floor(target * eased).toLocaleString();
+                if (t < 1) {
+                    requestAnimationFrame(tick);
+                } else {
+                    el.textContent = target.toLocaleString();
+                }
+            };
+            requestAnimationFrame(tick);
+        };
+
+        const io = new IntersectionObserver(
+            (entries) => {
+                for (const entry of entries) {
+                    if (entry.isIntersecting) {
+                        animate(entry.target as HTMLElement);
+                        io.unobserve(entry.target);
+                    }
+                }
+            },
+            { threshold: 0.4 }
+        );
+        els.forEach((el) => io.observe(el));
+
+        const cleanup = () => io.disconnect();
+        document.addEventListener("astro:before-swap", cleanup, { once: true });
+    }
+    document.addEventListener("astro:page-load", runCountUp);
+</script>

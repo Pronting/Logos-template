@@ -1,0 +1,32 @@
+---
+import MainPageLayout from '@layouts/MainPageLayout.astro';
+import ArticlesPanel from '@components/ArticlesPanel.svelte';
+import FabMenu from '@components/control/FabMenu.astro';
+
+import { getArticles } from '@utils/content-utils';
+import { siteConfig } from '@/config';
+import { i18n } from "astro:config/client";
+
+import i18nit from '@i18n/translation'
+
+export async function getStaticPaths() {
+    return i18n?.locales.map(locale => ({
+        params: { locale: locale == i18n?.defaultLocale ? undefined : (locale as string) }
+    }));
+}
+
+const currentLang = Astro.currentLocale || i18n!.defaultLocale;
+const t = i18nit(currentLang);
+
+const articles = await getArticles(currentLang);
+const pageTitle = `${t("header.articles")} - ${siteConfig.title}`;
+---
+
+<MainPageLayout title={pageTitle} lang={currentLang}>
+    <ArticlesPanel
+        client:only="svelte"
+        articles={articles}
+        currentLang={currentLang}
+    />
+    <FabMenu showBackBottom={true} />
+</MainPageLayout>

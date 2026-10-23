@@ -1,0 +1,32 @@
+---
+import { Icon } from "astro-icon/components";
+import { viewsEnabled } from "@utils/views";
+import i18nit from "@i18n/translation";
+
+interface Props {
+  lang?: string;
+}
+
+const lang = Astro.props.lang || "zh-cn";
+const t = i18nit(lang);
+const enabled = viewsEnabled();
+const unit = t("pagecard.views"); // "次浏览" / "views"
+---
+
+{enabled && (
+  <span class="flex items-center whitespace-nowrap mr-2" data-article-views>
+    <Icon name="fa6-solid:eye" class="mr-1" aria-hidden="true" />
+    <span class="py-1 px-1 tabular-nums">
+      <span id="busuanzi_value_page_pv">–</span>
+      <span class="ml-0.5">{unit}</span>
+    </span>
+  </span>
+)}
+
+<script>
+import { initViews } from "@utils/views";
+
+document.addEventListener("astro:page-load", initViews);
+document.addEventListener("astro:after-swap", initViews);
+document.addEventListener("DOMContentLoaded", initViews);
+</script>
