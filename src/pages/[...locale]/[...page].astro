@@ -53,9 +53,11 @@ const pageTitle = `${siteConfig.title} - ${siteConfig.subTitle}`;
     <Hero />
     <div class="home-layout mx-auto w-full max-w-[var(--page-width)] md:max-w-[1080px]">
         <div class="grid grid-cols-1 md:grid-cols-[280px_minmax(0,1fr)] gap-0 md:gap-6 md:items-start">
-            <aside class="home-aside hidden md:block">
+            <aside class="home-aside">
                 <div class="md:sticky md:top-24">
-                    <ProfileCard />
+                    <div class="hidden md:block">
+                        <ProfileCard />
+                    </div>
                     <ColumnPanel />
                 </div>
             </aside>
