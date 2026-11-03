@@ -6,7 +6,7 @@
 
 用 [Momo](https://github.com/Motues/Momo) 进行自定义开发,  最上游仓库： [astro](https://github.com/withastro/astro) ，评论系统部署：[momo-backend](https://github.com/Motues/Momo-Backend)
 
-![Logos 首页的深色与浅色主题](D:\doc\typora\images\theme-transition.png)
+![Logos 首页的深色与浅色主题](doc/images/theme-transition.png)
 
 
 
