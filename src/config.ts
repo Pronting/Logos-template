@@ -14,7 +14,7 @@ export const siteConfig: SiteConfig = {
 };
 
 export const profileConfig: ProfileConfig = {
-    avatar: '/avatar.svg',
+    avatar: '/rem.png',
     name: 'Logos',
     description: '记录学习与生活',
     motto: '欢迎来到我的博客',

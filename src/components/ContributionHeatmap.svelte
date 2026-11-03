@@ -65,7 +65,7 @@
   let snakeHead = $state(0);
   let eatenDates = $state(new Set<string>());
   let tooltip = $state<{ x: number; y: number; text: string } | null>(null);
-  let canvasEl: HTMLCanvasElement;
+  let canvasEl = $state<HTMLCanvasElement>();
 
   const calendar = $derived(buildCalendar(selectedRange));
   const snakePath = $derived(buildSnakePath(calendar));
@@ -207,6 +207,15 @@
 
   function buildSnakePath(model: CalendarModel) {
     if (model.cells.length === 0) return [];
+
+    if (!model.cells.some((cell) => cell.count > 0)) {
+      const path = model.weeks.flatMap((week, col) => {
+        const cells = week.filter((cell): cell is Cell => cell !== null);
+        return col % 2 === 0 ? cells : cells.reverse();
+      });
+      const loopBack = findPathToCell(path[path.length - 1], path[0], model.cells);
+      return [...path, ...loopBack.slice(1)];
+    }
 
     const remainingFood = new Set(model.cells.filter((cell) => cell.count > 0).map((cell) => cell.date));
     const path: Cell[] = [];

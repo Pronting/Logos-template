@@ -1,50 +1,35 @@
-# Logos
 
-基于 Astro、Svelte 和 Tailwind CSS 的博客模板，提供中文与英文路由、文章、书架、书评、专栏、搜索、数学公式与 Markdown 扩展。
 
-## 使用方法
+<p align="center"><img src="doc/images/logos-mark.svg" alt="Logos 标志" width="160"></p>
 
-通过 GitHub 的 Use this template 创建自己的仓库，安装 Node.js 22 与 pnpm 10，执行以下命令：
+<h1 align="center">Logos</h1>
 
-```sh
-pnpm install --frozen-lockfile
-pnpm dev
-```
+用 [Momo](https://github.com/Motues/Momo) 进行自定义开发,  最上游仓库： [astro](https://github.com/withastro/astro) ，评论系统部署：[momo-backend](https://github.com/Motues/Momo-Backend)
 
-生产构建使用 `pnpm build`，输出目录为 `dist/`。本地预览使用 `pnpm preview`。
+![Logos 首页的深色与浅色主题](D:\doc\typora\images\theme-transition.png)
 
-## 网站配置
 
-| 文件 | 配置内容 |
-| --- | --- |
-| `src/config.ts` | 网站名称、个人介绍、评论、友情链接 |
-| `src/config/hero.ts` | 首页标题与按钮 |
-| `astro.config.mjs` | 网站域名与语言 |
-| `src/styles/` | 样式 |
-| `src/content.config.ts` | 内容字段与校验规则 |
 
-评论与访问统计默认关闭。启用评论前需要填写自己的服务地址。
+# 基本功能
 
-## 内容示例
+简约设计，多端适配，全局搜索，陌生人评论，国际化，图片展示
 
-`src/content/` 提供各类内容的示例：`blog` 保存文章，`books` 保存书籍，`book-review` 保存书评，`columns` 保存专栏，`articles` 保存外部文章链接，`harness` 保存工具介绍，`spec` 保存关于与友情链接页面。
 
-目录中的 `zh-cn.md` 与 `en.md` 对应不同语言。书评的 `bookSlug` 对应书籍目录。专栏目录中的语言文件提供专栏介绍，文章目录位于专栏目录内部。
 
-使用 `draft: true` 隐藏生产页面中的草稿。需要保护文章源文件时，应将个人网站仓库设置为私有。
 
-## 自动检查与部署
 
-提交代码后，GitHub Actions 自动运行测试和生产构建。将 `dist/` 上传到自己的静态网站服务即可发布。Docker 部署可以使用项目中的 `Dockerfile`。
+# 新增特性
 
-AI 摘要通过 `pnpm ai:summary` 单独生成，需要配置模型服务凭据；常规构建无需这些凭据。凭据保存在环境变量或私有仓库的 Secrets 中。
+* **状态统计**：页脚网站运行时间，首页全局文章数，字数统计
+* **AI总结(可配制)** ：文章顶部新增AI总结
+* **更好的多端适配**： 各个板块都能在移动端有行号的兼容性
+* **全局搜索**
+* 除了文章分类，归档，专栏，标签以外，还添加外链收藏，书籍，harness 分享，关于(个人卡片，网站简介)等一些可替换的页面
 
-## 更新框架
+内容目录、元信息字段与使用示例请查看[内容元信息使用指南](doc/content-metadata.md)。
 
-框架功能在此仓库维护。个人博客可以将此仓库添加为 `upstream`，通过 `git fetch upstream` 获取更新，再选择需要的框架提交。个人文章、图片、配置与部署文件在个人仓库维护。
 
-此仓库具有独立的 Git 历史，初次接入已有博客时需要逐项检查框架文件。后续选择具体的框架提交更新，保留个人内容与配置。
 
-## 来源与许可
+# 展示图
 
-Logos 基于 Motues/Momo 开发。原项目的许可声明保存在 `LICENSE` 中。
+更多展示图请查看线上网址
