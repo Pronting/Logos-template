@@ -85,8 +85,17 @@ const pageLang = lang || i18n?.defaultLocale || "zh-cn";
     <script is:inline>
         let loaderTimeout;
 
+        const hideLoadingOverlay = () => {
+            clearTimeout(loaderTimeout);
+            loaderTimeout = undefined;
+
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay) overlay.style.display = 'none';
+        };
+
         // 1. 开始准备跳转
         document.addEventListener('astro:before-preparation', () => {
+            clearTimeout(loaderTimeout);
             loaderTimeout = setTimeout(() => {
             const overlay = document.getElementById('loading-overlay');
             if (overlay) overlay.style.display = 'flex';
@@ -94,19 +103,13 @@ const pageLang = lang || i18n?.defaultLocale || "zh-cn";
         });
 
         // 2. 页面内容交换完成（DOM 已更新）
-        document.addEventListener('astro:after-swap', () => {
-            clearTimeout(loaderTimeout);
-            
-            const overlay = document.getElementById('loading-overlay');
-            if (overlay) overlay.style.display = 'none';
-        });
+        document.addEventListener('astro:after-swap', hideLoadingOverlay);
 
         // 3. 兜底方案：页面完全加载完成（包括资源）
-        document.addEventListener('astro:page-load', () => {
-            clearTimeout(loaderTimeout);
-            const overlay = document.getElementById('loading-overlay');
-            if (overlay) overlay.style.display = 'none';
-        });
+        document.addEventListener('astro:page-load', hideLoadingOverlay);
+
+        window.addEventListener('pagehide', hideLoadingOverlay);
+        window.addEventListener('pageshow', hideLoadingOverlay);
         </script>
 </body>
 </html>
